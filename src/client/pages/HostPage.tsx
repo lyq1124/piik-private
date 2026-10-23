@@ -32,7 +32,10 @@ import { LiveAudioExclusion } from "../components/living/AudioExclusionSelect";
 import { RoomInteractions } from "../components/living/RoomInteractions";
 import { RoomChatOverlay } from "../components/living/RoomChatOverlay";
 import type { RoomInteractionSession } from "../lib/room-interactions";
+import type { RoomVoiceSession } from "../room-voice/session";
+import { RoomVoicePanel, useRoomVoiceSnapshot } from "../room-voice/RoomVoicePanel";
 import { HostAudio } from "../media/host-audio";
+import { requireVoiceSafeSource } from "../room-voice/source-audio";
 import {
   CaptureSourcePicker,
   type NativeSourceList,
@@ -384,6 +387,8 @@ export function HostPage({
   const audioAvailableRef = useRef(false);
   const [microphoneEnabled, setMicrophoneEnabled] = useState(false);
   const [interactionSession, setInteractionSession] = useState<RoomInteractionSession | null>(null);
+  const [voiceSession,setVoiceSession]=useState<RoomVoiceSession|null>(null);
+  const voiceSnapshot=useRoomVoiceSnapshot(voiceSession);
   const [microphoneVolume, setMicrophoneVolume] = useState(1);
   const [microphoneVoiceProcessing, setMicrophoneVoiceProcessing] = useState(true);
   const [microphonePending, setMicrophonePending] = useState(false);
@@ -920,7 +925,7 @@ export function HostPage({
     }
     if (!keepRoomSession) {
       signalRef.current = null;
-      setInteractionSession(null);
+      setInteractionSession(null); setVoiceSession(null);
     }
     shareGenerationRef.current = null;
     disposeNativeShare();
@@ -1239,6 +1244,7 @@ export function HostPage({
     selection: Extract<ShareSourceSelection, { kind: "native" }>,
   ): Promise<MediaStream | null> {
     const { client, target, audio, excludeAudio, showCaptureBorder, path } = selection;
+    if(voiceSession?.getSnapshot().joined&&audio&&target.kind==="display"&&!excludeAudio)throw new Error("source-audio");
     let bridge: NativeMediaBridge | null = null;
     let shareStarted = false;
     let nativeEventCleanup: (() => void) | null = null;
@@ -2602,7 +2608,7 @@ export function HostPage({
             if (!localShareActive || !signal.wantsHostPublication(currentShareGeneration!)) {
               signalRef.current = null;
               signal.stop();
-              setInteractionSession(null);
+              setInteractionSession(null); setVoiceSession(null);
               setSignalStatus("offline");
               forgetRoom(activeRoom);
               // Capture may still be awaiting permission. Its ready path owns
@@ -2709,6 +2715,7 @@ export function HostPage({
     signal.setAudioAvailable(audioAvailableRef.current);
     remoteInputPeersRef.current = [];
     void getRuntimeCapabilities().then(capabilities => {
+      if (signalRef.current === signal && capabilities.roomVoice) setVoiceSession(signal.enableRoomVoice());
       if (signalRef.current === signal && capabilities.roomInteractions) setInteractionSession(signal.enableRoomInteractions(capabilities.roomReactionIds));
       if (signalRef.current === signal && capabilities.remoteInput) signal.enableRemoteInput();
       if (signalRef.current === signal && capabilities.audioPresence) signal.enableAudioPresence();
@@ -2788,6 +2795,7 @@ export function HostPage({
       } else {
         // This must remain the first awaited operation in the button gesture.
         captured = await captureBrowserSource(qualitySettingsRef.current, selection.source ?? "browser", selection.deviceId);
+        if(voiceSession?.getSnapshot().joined){try{await requireVoiceSafeSource(captured);}catch(error){captured.getTracks().forEach(track=>track.stop());throw error;}}
       }
     } catch (error) {
       if (!isCurrentShare(generation, shareGeneration)) {
@@ -2927,6 +2935,9 @@ export function HostPage({
     ) {
       return;
     }
+    if(voiceSession?.getSnapshot().joined&&audio&&target.kind==="display"&&!excludeAudio){
+      setNoticeValue({kind:"key",key:"voice.error.source-audio",target:"operation",comic:"warning",tone:"warn"});return;
+    }
     const previous = nativeSourceSelectionRef.current;
     const token = { audioOnly: target.kind !== "picker" && !!previous &&
       nativeCaptureTargetKey(previous.target) === nativeCaptureTargetKey(target) &&
@@ -3032,6 +3043,7 @@ export function HostPage({
     try {
       // Like initial capture, changing source must begin in this button gesture.
       captured = await captureBrowserSource(qualitySettingsRef.current, source, deviceId);
+      if(voiceSession?.getSnapshot().joined){try{await requireVoiceSafeSource(captured);}catch(error){captured.getTracks().forEach(track=>track.stop());throw error;}}
     } catch (error) {
       if (
         isCurrentGeneration(generation) &&
@@ -3069,6 +3081,7 @@ export function HostPage({
   function setCaptureError(error: unknown, source: BrowserCaptureSource | undefined, action: "source" | "capture") {
     debugError("capture", "failed", error, { action, source });
     const target = action === "source" ? "operation" : "television";
+    if(error instanceof Error&&error.message==="source-audio"){setNoticeValue({kind:"key",key:"voice.error.source-audio",target,comic:"warning",tone:"warn"});return;}
     if (source !== "camera") {
       setNoticeError(error, action, target);
       return;
@@ -3078,7 +3091,21 @@ export function HostPage({
       failureCode: hostFailureCode(error, action, "camera") });
   }
 
+  async function prepareRoomVoice(): Promise<void> {
+    hostAudioRef.current?.releaseMicrophone();
+    const native=nativeClientRef.current,share=nativeShareGenerationRef.current;
+    if(nativeModeRef.current&&native&&share&&native.health.nativeMedia.microphone){
+      await native.setMicrophone(share,false,microphoneVolume,microphoneDevices.native);
+    }
+    setMicrophoneEnabled(false);
+    if(nativeModeRef.current){
+      const source=nativeSourceSelectionRef.current;
+      if(source?.audio&&source.target.kind==="display"&&!source.excludeAudio)throw new Error("source-audio");
+    }else if(hostAudioRef.current){await requireVoiceSafeSource(hostAudioRef.current.sourceStream);}
+  }
+
   async function changeMicrophone(enabled: boolean, deviceId: string, voiceProcessing = microphoneVoiceProcessing): Promise<void> {
+    if(voiceSession?.getSnapshot().joined){await voiceSession.setMicrophone(enabled,voiceSession.getSnapshot().deviceId);return;}
     const audio = hostAudioRef.current;
     const generation = activeGenerationRef.current;
     const client = nativeModeRef.current ? nativeClientRef.current : null;
@@ -3791,10 +3818,10 @@ export function HostPage({
           </StageTv>
           <HostShareControls
             actions={phase === "live" ? <>
-              <HostMicrophone enabled={microphoneEnabled} pending={microphonePending}
-                unavailable={nativeActive && !nativeClientRef.current?.health.nativeMedia.microphone} paused={sharingPaused} disabled={switchingSource || changingQuality}
-                volume={microphoneVolume}
-                onToggle={() => void changeMicrophone(!microphoneEnabled, microphoneDevices[nativeActive ? "native" : "browser"])} />
+              <HostMicrophone enabled={voiceSnapshot.joined ? !voiceSnapshot.muted : microphoneEnabled} pending={voiceSnapshot.joined ? voiceSnapshot.pending : microphonePending}
+                unavailable={!voiceSnapshot.joined && nativeActive && !nativeClientRef.current?.health.nativeMedia.microphone} paused={!voiceSnapshot.joined && sharingPaused} disabled={voiceSnapshot.joined ? voiceSnapshot.status!=="connected" : switchingSource || changingQuality}
+                volume={voiceSnapshot.joined ? 1 : microphoneVolume}
+                onToggle={() => voiceSnapshot.joined ? void voiceSession?.setMicrophone(voiceSnapshot.muted) : void changeMicrophone(!microphoneEnabled, microphoneDevices[nativeActive ? "native" : "browser"])} />
               <Btn
                 id="host-switch-source"
                 icon="switchSource"
@@ -3931,7 +3958,7 @@ export function HostPage({
                     onChange={target => changeNativeSourceAudio(true, target)} />
                 </div>
               ) : null}
-              {phase === "live" && (!nativeActive || nativeClientRef.current?.health.nativeMedia.microphone) ? (
+              {phase === "live" && !voiceSnapshot.joined && (!nativeActive || nativeClientRef.current?.health.nativeMedia.microphone) ? (
                 <HostMicrophoneSettings enabled={microphoneEnabled}
                 disabled={microphonePending || switchingSource || changingQuality || sharingPaused}
                   volume={microphoneVolume} onVolume={volume => {
@@ -3998,6 +4025,7 @@ export function HostPage({
               </div>
             }
           />
+          <RoomVoicePanel session={room ? voiceSession : null} beforeJoin={prepareRoomVoice} showMicrophone={phase!=="live"}/>
           <RoomInteractions session={room ? interactionSession : null}
             view="host"
             host={{

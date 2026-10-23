@@ -311,6 +311,8 @@ func TestPersistentRoomSessionReconnectStaysMediaIdle(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 type harnessOptions struct {
+	voiceMedia                          sfu.VoiceRuntime
+	voiceMaxRooms                       int
 	authenticationTimeoutMs             int
 	viewerDisconnectGraceMs             int
 	roomEmptyTimeoutMs                  int64
@@ -400,6 +402,8 @@ func startHarness(t *testing.T, options harnessOptions) *harness {
 		t.Fatal(err)
 	}
 	server, err := New(Options{
+		VoiceMedia:                options.voiceMedia,
+		RoomVoiceMaxRooms:         options.voiceMaxRooms,
 		Store:                     store,
 		EndpointMediaCopyCapacity: orValue(options.endpointMediaCopyCapacity, 2),
 		SfuFallback:               options.sfu,

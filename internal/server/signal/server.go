@@ -67,6 +67,8 @@ type SfuFallback struct {
 
 // Options supplies room authority, runtime capabilities and signaling limits.
 type Options struct {
+	RoomVoiceMaxRooms         int
+	VoiceMedia                sfu.VoiceRuntime
 	Store                     *room.Store
 	EndpointMediaCopyCapacity int
 	// SfuFallback is nil when embedded SFU media is disabled.
@@ -183,6 +185,10 @@ type Server struct {
 	viewerQualityEvidenceAttempts map[string]viewerQualityEvidenceAttempt
 	senderQualityRateBySession    map[string]*senderQualityRateWindow
 	// shares keeps generation, settings, route policy and pause intent together.
+	voiceRooms                  map[string]map[string]*roomVoiceMember
+	voiceMaxRooms               int
+	voiceMaxParticipants        int
+	voiceMedia                  sfu.VoiceRuntime
 	shares                      map[string]roomShare
 	deferredViewerPresenceRooms map[string]struct{}
 
@@ -206,6 +212,10 @@ func New(options Options) (*Server, error) {
 	}
 	s := &Server{
 		store:                         options.Store,
+		voiceRooms:                    map[string]map[string]*roomVoiceMember{},
+		voiceMaxRooms:                 options.RoomVoiceMaxRooms,
+		voiceMaxParticipants:          options.Store.MaxViewersPerRoom() + 1,
+		voiceMedia:                    options.VoiceMedia,
 		endpointMediaCopyCapacity:     options.EndpointMediaCopyCapacity,
 		sfuFallback:                   options.SfuFallback,
 		ice:                           options.Ice,
@@ -417,6 +427,9 @@ func (s *Server) hasConnectionCapacity() bool {
 func (s *Server) Close(ctx context.Context) error {
 	s.mu.Lock()
 	s.closing = true
+	for roomID := range s.voiceRooms {
+		s.closeRoomVoice(roomID)
+	}
 	if s.heartbeatStop != nil {
 		s.heartbeatStop()
 	}
@@ -1114,6 +1127,12 @@ func (s *Server) settleHostShare(roomID, sessionID string, request authRequest) 
 		share.pausedGeneration = shareGeneration
 	}
 	s.shares[roomID] = share
+	if share.routePolicy != nil && share.routePolicy.PeerOnly {
+		for _, member := range s.voiceRooms[roomID] {
+			s.voiceError(member.session, "forbidden")
+		}
+		s.closeRoomVoice(roomID)
+	}
 	if currentGeneration != shareGeneration {
 		s.broadcastAudioPresence(roomID)
 	}
@@ -1198,6 +1217,10 @@ func routeParticipant(sess *session, authenticated *authenticatedSession) authen
 
 func (s *Server) handleAuthenticatedMessage(sess *session, authenticated *authenticatedSession, message protocol.ClientMessage) {
 	switch m := message.(type) {
+	case protocol.VoiceCommandMessage:
+		s.handleVoiceCommand(sess, authenticated, m)
+	case protocol.VoiceSignalMessage:
+		s.handleVoiceSignal(sess, authenticated, m)
 	case protocol.SubscribeRemoteInputMessage:
 		s.subscribeRemoteInput(sess, authenticated, m)
 	case protocol.SubscribeRoomInteractionsMessage:
@@ -1308,6 +1331,10 @@ func (s *Server) handleAuthenticatedMessage(sess *session, authenticated *authen
 		}
 		name := string(m.DisplayName)
 		authenticated.displayName = &name
+		if member := s.voiceRooms[authenticated.roomID][authenticated.peerID]; member != nil {
+			member.name = name
+			s.broadcastVoiceState(authenticated.roomID)
+		}
 		s.sendViewerPresence(authenticated.roomID)
 	case protocol.SubscribeAudioPresenceMessage:
 		if authenticated.role == protocol.RoleViewer {

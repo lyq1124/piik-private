@@ -36,6 +36,14 @@ service secret store or an untracked access-restricted environment file.
 
 ### Room capacity
 
+`ROOM_VOICE_MAX_ROOMS` is an integer `0..9000`, default `0` (disabled).
+A positive value requires `SFU_UDP_PORT` and limits concurrent voice rooms in
+this Go process. Voice members remain bounded by `MAX_VIEWERS_PER_ROOM` plus
+the Host. The private four-person site uses `ROOM_VOICE_MAX_ROOMS=1` and
+`MAX_VIEWERS_PER_ROOM=3`; this is not a general capacity claim for other limits.
+The optional `roomVoice` runtime capability advertises availability. Voice uses
+the existing media UDP listener and authenticated WebSocket, with no new port.
+
 `MAX_VIEWERS_PER_ROOM` counts authenticated Viewers per room, excluding the Host.
 Self-hosted Server accepts `1..20` and defaults to `20`, matching the App and
 deployment examples. Apply changes by restarting the

@@ -218,6 +218,10 @@ func DecodeClientMessage(data []byte) (ClientMessage, error) {
 		return nil, err
 	}
 	switch messageType {
+	case "voice-command":
+		return decodeVoiceCommand(data)
+	case "voice-signal":
+		return decodeVoiceSignal(data)
 	case "set-viewer-route-preference":
 		return decodeSetViewerRoutePreference(data)
 	case "subscribe-audio-presence":

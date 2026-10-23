@@ -24,6 +24,7 @@
     "../site/film/ui/main.tsx",
     "../site/film/ui/website.ts",
     "access-privacy-gate.ts",
+    "private-room-voice-gate.ts",
     "browser-local-pool-probe.ts",
     "network-lab.ts",
     "media-lifecycle-gate.ts",

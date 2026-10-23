@@ -34,6 +34,7 @@ const (
 const (
 	defaultMaxViewersPerRoom = protocol.MaxViewersPerRoomLimit
 	defaultPort              = 8787
+	roomVoiceMaxRoomsLimit   = 9000
 	maxPort                  = 65_535
 )
 
@@ -85,6 +86,7 @@ type Config struct {
 	RoomEmptyTimeoutSeconds   int
 	MaxViewersPerRoom         int
 	EndpointMediaCopyCapacity int
+	RoomVoiceMaxRooms         int
 	SFU                       *SFUConfig
 	STUNURLs                  []string
 	// STUNListenAddresses is populated only by Hosted configuration. Local
@@ -192,6 +194,17 @@ func Load(env map[string]string) (Config, error) {
 		return Config{}, err
 	}
 
+	voiceRooms := 0
+	if raw := strings.TrimSpace(env["ROOM_VOICE_MAX_ROOMS"]); raw != "" {
+		voiceRooms, err = strconv.Atoi(raw)
+		if err != nil || voiceRooms < 0 || voiceRooms > roomVoiceMaxRoomsLimit {
+			return Config{}, errors.New("ROOM_VOICE_MAX_ROOMS must be between 0 and 9000")
+		}
+	}
+	if voiceRooms > 0 && sfu == nil {
+		return Config{}, errors.New("room voice requires SFU_UDP_PORT")
+	}
+
 	if environment == EnvironmentProduction && len(stunURLs) == 0 {
 		return Config{}, errors.New("STUN is required in production")
 	}
@@ -213,6 +226,7 @@ func Load(env map[string]string) (Config, error) {
 		MaxViewersPerRoom:         int(maxViewersPerRoom),
 		EndpointMediaCopyCapacity: int(endpointMediaCopyCapacity),
 		SFU:                       sfu,
+		RoomVoiceMaxRooms:         voiceRooms,
 		STUNURLs:                  stunURLs,
 		STUNListenAddresses:       stunListeners,
 		NATPredictionEnabled:      natPredictionEnabled,

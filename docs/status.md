@@ -1,5 +1,11 @@
 # Current Status
 
+Private deployment work, 2026-10-24: opt-in, server-forwarded room voice is
+implemented under ADR-0015 with the current picture routing retained. The
+private four-person candidate requires deployment/resource and physical-device
+acceptance. The v2.2.1 baseline remains the recovery target; older release
+descriptions below describe that baseline rather than this candidate.
+
 Last updated: 2026-10-19
 
 This is the compact execution/deployment index. Product modules own behavior,
@@ -49,7 +55,8 @@ also accepts an optional SFU-only policy through the same route controller.
 Windows native capture and thumbnails now share automatic HDR-to-SDR conversion;
 synthetic GPU and Browser reception checks pass, with physical HDR display
 acceptance still pending in [verification status](./verification-status.md).
-Room voice is outside the product plan; Host microphone commentary remains.
+The baseline has Host microphone commentary; the private candidate adds
+explicit room voice while preserving the baseline path when voice is unused.
 These features are published; physical device limits remain open.
 Release artifacts and operator deployment records own delivery completion;
 [TODO](./todo.md#now) owns remaining work.
@@ -82,7 +89,7 @@ established no additional reachability worth its integration costs.
 The [media assessment](./research/native-client-media.md#media-capability-extension-assessment)
 owns bounded output and live-control evidence. Physical macOS/Linux capture,
 limited decoders and sustained game/4K use retain the limits in
-[verification status](./verification-status.md). Additional codecs, room voice,
+[verification status](./verification-status.md). Additional codecs,
 surround delivery and end-to-end HDR remain outside this phase.
 
 2.0 was published after final acceptance without a separate field beta.

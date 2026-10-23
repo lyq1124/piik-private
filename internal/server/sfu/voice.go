@@ -56,6 +56,8 @@ type VoiceRuntime interface {
 	ConfigureVoice(VoiceConnectionPlan, func(VoiceMediaEvent)) error
 	SignalVoice(room, peer, session, connection string, signal VoiceSignal) error
 	CloseVoice(room, peer, session, connection string) error
+	SetVoiceMuted(room, peer, session, connection string, muted bool) error
+	RestartVoice(room, peer, session, connection string) error
 }
 
 type voiceKey struct{ room, peer, session, connection string }
@@ -176,6 +178,32 @@ func (media *Media) CloseVoice(room, peer, session, connection string) error {
 		return nil
 	}
 	return c.close()
+}
+
+func (media *Media) SetVoiceMuted(room, peer, session, connection string, muted bool) error {
+	v := media.voice
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	c := v.connections[voiceKey{room, peer, session, connection}]
+	if c == nil {
+		return errors.New("voice connection is no longer current")
+	}
+	c.muted = muted
+	return nil
+}
+
+func (media *Media) RestartVoice(room, peer, session, connection string) error {
+	v := media.voice
+	v.mu.Lock()
+	c := v.connections[voiceKey{room, peer, session, connection}]
+	v.mu.Unlock()
+	if c == nil {
+		return errors.New("voice connection is no longer current")
+	}
+	c.signaling.Lock()
+	defer c.signaling.Unlock()
+	c.restartICE = true
+	return c.offer(true)
 }
 
 func (v *voiceMedia) close() error {

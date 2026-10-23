@@ -185,6 +185,7 @@ func (v *RoutePolicy) UnmarshalJSON(data []byte) error {
 
 // RuntimeCapabilities mirrors runtimeCapabilitiesSchema.
 type RuntimeCapabilities struct {
+	RoomVoice            bool     `json:"roomVoice,omitempty"`
 	Sfu                  bool     `json:"sfu"`
 	SfuOnly              bool     `json:"sfuOnly,omitempty"`
 	NatPrediction        bool     `json:"natPrediction"`
@@ -206,12 +207,12 @@ func (v *RuntimeCapabilities) UnmarshalJSON(data []byte) error {
 	if present == nil {
 		return errors.New("runtime capabilities must be an object")
 	}
-	if err := present.optional("sfu", "sfuOnly", "roomInteractions", "hostRoomSession", "natPrediction", "remoteInput", "viewerRouteSelection", "audioPresence", "roomReactionIds"); err != nil {
+	if err := present.optional("roomVoice", "sfu", "sfuOnly", "roomInteractions", "hostRoomSession", "natPrediction", "remoteInput", "viewerRouteSelection", "audioPresence", "roomReactionIds"); err != nil {
 
 		return err
 	}
 	for key, target := range map[string]*bool{
-		"sfu": &v.Sfu, "sfuOnly": &v.SfuOnly, "natPrediction": &v.NatPrediction,
+		"roomVoice": &v.RoomVoice, "sfu": &v.Sfu, "sfuOnly": &v.SfuOnly, "natPrediction": &v.NatPrediction,
 		"roomInteractions": &v.RoomInteractions, "hostRoomSession": &v.HostRoomSession,
 		"remoteInput":          &v.RemoteInput,
 		"viewerRouteSelection": &v.ViewerRouteSelection,

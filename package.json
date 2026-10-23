@@ -30,6 +30,7 @@
     "gate:app-link": "tsx scripts/app-link-gate.ts",
     "gate:peer-topology-loopback": "tsx scripts/peer-assisted-benchmark.ts",
     "gate:sfu-admission": "vitest run tests/sfu-client.test.ts tests/route-transition.test.ts && go test ./internal/server/...",
+    "gate:private-room-voice": "tsx scripts/private-room-voice-gate.ts",
     "gate:access-privacy": "npm run build:web && tsx scripts/access-privacy-gate.ts",
     "probe:app-loopback": "tsx scripts/app-loopback-gate.ts",
     "gate:app-local": "tsx scripts/app-local-gate.ts",

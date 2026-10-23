@@ -11,6 +11,18 @@ contract. [Status](../status.md) indexes delivery and remaining acceptance.
 
 ## Capture And Controls
 
+The private ADR-0015 room voice capture is independent of picture/source sound.
+It requests mono speech processing and a 32 kbit/s Opus send ceiling. A Host
+joining voice first releases Browser/native commentary, including pending
+permission results, so the same microphone cannot be sent through two routes.
+Leaving voice does not silently reopen commentary. Devices are released on
+leaving the call; mute may retain one disabled input for a later unmute.
+System source sound must exclude room playback: camera-only sources need no
+loopback handling, excluded-self tab capture and verified `restrictOwnAudio`
+are Browser paths, and native display capture uses existing process exclusion.
+Unisolated system-sound combinations are rejected with source-selection guidance.
+Physical acoustic echo and process-exclusion correctness remain device evidence.
+
 - The Web Host may share a display, application window, Browser tab or camera and may
   stop, synchronously pause/resume audio and video, or switch source.
 - An App-launched Host explicitly chooses either that Browser capture path or

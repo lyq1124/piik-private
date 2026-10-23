@@ -9,6 +9,12 @@ Git/PRs own completed history.
 
 ## Now
 
+- [ ] **Private four-person room voice (2026-10-24).** Implemented on the
+  private branch under ADR-0015; complete exact-candidate packaging, production
+  resource measurement and physical phone/glasses, echo and full-system audio
+  acceptance before calling the private rollout stable. Preserve the pinned
+  v2.2.1 baseline and keep normal rollback independent of the live database.
+
 The 2.x maintenance line retains the published protocol and route owners.
 Release artifacts and operator records own exact delivery; remaining product
 work is listed below. Broader device coverage does not override the owner's

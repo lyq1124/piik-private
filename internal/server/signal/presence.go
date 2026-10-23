@@ -123,6 +123,7 @@ func (s *Server) handleDisconnect(sess *session) {
 		return
 	}
 	sess.clearAuthenticationTimer()
+	s.disconnectVoice(sess)
 	delete(s.senderQualityRateBySession, sess.sessionID)
 	s.sessions.Delete(sess)
 	if s.sessionsByID[sess.sessionID] == sess {
@@ -212,6 +213,7 @@ func (s *Server) abandonRoom(roomID string) error {
 // closeRoom closes the host session first, then
 // viewers in store order, each told room-closed then closed with 1000.
 func (s *Server) closeRoom(closed room.ClosedRoom) {
+	s.closeRoomVoice(closed.RoomID)
 	s.clearRoomGraceTimers(closed.RoomID)
 	s.clearRoomViewerEvidence(closed.RoomID)
 	s.router.deleteRoom(closed.RoomID)
@@ -290,6 +292,7 @@ func (s *Server) clearViewerGrace(roomID, peerID string) {
 }
 
 func (s *Server) clearViewerState(roomID, peerID string) {
+	s.removeVoiceMember(roomID, peerID)
 	s.clearViewerGrace(roomID, peerID)
 	s.clearViewerEvidence(roomID, peerID)
 }

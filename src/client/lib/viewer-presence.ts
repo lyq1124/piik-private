@@ -33,7 +33,7 @@ function comparePeerIdentity(
   return left.peerId < right.peerId ? -1 : left.peerId > right.peerId ? 1 : 0;
 }
 
-function labelPresence<T extends PresenceIdentity>(
+export function labelPresence<T extends PresenceIdentity>(
   entries: readonly T[],
 ): LabeledPresence<T>[] {
   const nameCounts = new Map<string, number>();

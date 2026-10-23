@@ -6,6 +6,16 @@ tests belong in source code.
 
 ## Product Surface
 
+When the optional private Hosted voice capability is present, Host and Viewer
+show the same compact room voice controls. Joining listens while muted; the
+user separately enables the microphone. Source sound and room listening volumes
+are independent. Host live-sharing controls reuse the existing microphone slot
+for the call while joined. Stopping, pausing or replacing picture capture leaves
+the admitted call intact. Room retirement and access denial release the call.
+Permission failure leaves listening usable. Reload does not automatically join
+or capture; mobile suspension reports actual transport/playback state and offers
+recovery without restarting a healthy camera merely to switch the microphone.
+
 The first screen is the working tool, not a marketing page. Once site access is
 available, starting a share and joining a room are equally discoverable actions;
 joining expands the four-digit room form in place, while `/join` remains a direct

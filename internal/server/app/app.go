@@ -151,6 +151,7 @@ func New(options Options) (*Server, error) {
 	server.signalOptions = signal.Options{
 		Store:                     store,
 		EndpointMediaCopyCapacity: configuration.EndpointMediaCopyCapacity,
+		RoomVoiceMaxRooms:         configuration.RoomVoiceMaxRooms,
 		SfuOnly:                   configuration.SFU != nil && configuration.SFU.Only,
 		Ice:                       config.IceConfig(configuration),
 		// The prediction capability is separate from the wire-shaped ICE settings.
@@ -264,6 +265,9 @@ func (s *Server) start(ctx context.Context) (int, error) {
 				signaling.HandleSfuMediaEvent(event)
 			}
 		}})
+		if s.config.RoomVoiceMaxRooms > 0 {
+			s.signalOptions.VoiceMedia = s.media
+		}
 		s.signalOptions.SfuFallback = &signal.SfuFallback{Media: s.media, Admission: sfu.NewAdmission(sfu.AdmissionOptions{
 			IngressCapacity: room.Capacity, EgressCapacity: room.Capacity * s.config.MaxViewersPerRoom,
 		})}

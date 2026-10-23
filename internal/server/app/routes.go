@@ -78,6 +78,7 @@ func (s *Server) route(
 		}
 		sendJSON(writer, http.StatusOK, protocol.RuntimeCapabilities{
 			Sfu:                  s.config.SFU != nil,
+			RoomVoice:            s.config.RoomVoiceMaxRooms > 0 && s.config.SFU != nil,
 			SfuOnly:              s.config.SFU != nil && s.config.SFU.Only,
 			NatPrediction:        s.config.NATPredictionEnabled && !(s.config.SFU != nil && s.config.SFU.Only),
 			RoomInteractions:     true,

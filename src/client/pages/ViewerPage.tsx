@@ -29,6 +29,8 @@ import type { CouchEntry } from "../components/living/Couch";
 import { RoomInteractions } from "../components/living/RoomInteractions";
 import { RoomChatOverlay, RoomChatOverlaySettings, RoomChatToggle } from "../components/living/RoomChatOverlay";
 import type { RoomInteractionSession } from "../lib/room-interactions";
+import type { RoomVoiceSession } from "../room-voice/session";
+import { RoomVoicePanel } from "../room-voice/RoomVoicePanel";
 import { getRuntimeCapabilities } from "../lib/api";
 import { participantColor } from "../components/living/participant-color";
 import { MetricCells } from "../components/living/Metrics";
@@ -272,6 +274,7 @@ export function ViewerPage({
   const viewerSfuRouteRef = useRef<ViewerSfuRoute | null>(null);
   const signalRef = useRef<SignalingClient | null>(null);
   const [interactionSession, setInteractionSession] = useState<RoomInteractionSession | null>(null);
+  const [voiceSession,setVoiceSession]=useState<RoomVoiceSession|null>(null);
   const [pictureFit, setPictureFit] = useState<VideoFit>(() => readRoomPreferences().pictureFit);
   const [routeOptions, setRouteOptions] = useState<{ sfu: boolean; sfuOnly: boolean } | null>(null);
   const [routePreference, setRoutePreference] = useState<ViewerRoutePreference>("auto");
@@ -620,10 +623,11 @@ export function ViewerPage({
         },
       },
     );
-    setInteractionSession(null);
+    setInteractionSession(null); setVoiceSession(null);
     setRouteOptions(null);
     setAudioAvailable(null);
     void getRuntimeCapabilities().then(capabilities => {
+      if (active && capabilities.roomVoice) setVoiceSession(signal.enableRoomVoice());
       if (active && capabilities.audioPresence) signal.enableAudioPresence();
       if (active && capabilities.roomInteractions) setInteractionSession(signal.enableRoomInteractions(capabilities.roomReactionIds));
       if (active && capabilities.remoteInput) inputRoute.enable(identity => signal.send({ type: "subscribe-remote-input", ...identity }));
@@ -2350,6 +2354,7 @@ export function ViewerPage({
               />
             )}
           </div>
+          <RoomVoicePanel session={voiceSession}/>
           <RoomInteractions session={interactionSession}
             view="viewer"
             host={

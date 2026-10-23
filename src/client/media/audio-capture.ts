@@ -24,6 +24,7 @@ export function displayMediaOptions(
   return {
     video,
     audio: audioInputConstraints(false),
+    selfBrowserSurface: "exclude",
     systemAudio: "include",
     windowAudio: "window",
   } as DisplayMediaAudioHints;

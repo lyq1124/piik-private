@@ -126,6 +126,17 @@ code-only attempts and does not silently revoke invitations.
 
 ## Room Interactions
 
+### Private Hosted room voice
+
+Under [ADR-0015](../adr/0015-bounded-hosted-room-voice.md), authenticated members
+may explicitly join the optional Hosted voice service. Joining starts listening
+with the microphone muted; speaking requires a separate user action. Existing
+room access, revocation and room-close authority also retire voice. Healthy
+audio may survive signaling loss within the existing disconnect grace, but a
+new session must reauthenticate before it can change or signal voice resources.
+Voice is transient and does not add database records, recordings or media tokens.
+Only opted-in members receive voice messages; old picture clients remain valid.
+
 Text and reactions reuse the authenticated room signaling connection. The server
 derives sender identity from that session and accepts targeted reactions only
 for participants still connected to the same room. Interaction subscriptions

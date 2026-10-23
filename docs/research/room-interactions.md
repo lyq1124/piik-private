@@ -248,7 +248,9 @@ danmaku or reaction effects. Current behavior remains the no-history contract ab
 ## Audio Boundary
 
 The Host microphone remains commentary mixed into the shared source.
-Bidirectional room voice is not part of the product plan.
+This sentence describes the published v2.2.1 baseline. The private deployment
+now implements bounded Hosted bidirectional voice under ADR-0015; its behavior
+and physical evidence boundary are owned by the product standards and status.
 Text, reactions and danmaku introduce no microphone capture, voice
 admission or additional media peers.
 

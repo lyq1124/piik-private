@@ -78,6 +78,7 @@ function fixture(launchedByClient = true) {
     stopReceive: vi.fn(async () => undefined), stopShare: vi.fn(async () => undefined) };
   const route = { updateProfile: vi.fn(async () => true), resyncAuthoritative: vi.fn(async (): Promise<void> => undefined) };
   const state = {
+	voiceSession: null, setVoiceSession: vi.fn(),
     debugError, debugEvent, debugOperation, NativeCompatibilityError, NativeRequestError, NativeMediaBridgeError, isCapturePermissionFailure, hostFailureCode, hostActionErrorKey, hostServerErrorKey, DOMException, AbortController,
     launchedByClient, isClientActivated: vi.fn(() => launchedByClient), hostRoomSessionAvailable: false,
     NativeClient: { connect: vi.fn(async (_options?: { signal: AbortSignal }): Promise<typeof client | null> => null) },

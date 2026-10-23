@@ -1,5 +1,16 @@
 # Routing And Transport
 
+## Private Hosted voice transport
+
+The opt-in ADR-0015 voice service uses one audio-only connection per participant
+to the embedded server, independent of this document's picture graph. The
+application-owned UDP mux is shared; a member's teardown cannot close that mux.
+Each member sends one admitted Opus publication and receives the other members'
+publications. The server neither decodes nor mixes audio and never returns a
+member's own publication. Peer-only privacy policy disallows server voice.
+Voice failure gets one ICE restart and then one transport rebuild with bounded
+deadlines; exhaustion asks for explicit rejoining. Picture routing is unchanged.
+
 This file owns the user-visible routing and transport contract.
 [ADR-0005](../adr/0005-automatic-hybrid-media-routing.md) owns the controller
 algorithm and resource invariants; [configuration](./configuration.md)

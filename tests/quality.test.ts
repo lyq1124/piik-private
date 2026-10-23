@@ -176,6 +176,7 @@ describe("realtime quality controls", () => {
         voiceIsolation: false,
         channelCount: { ideal: 2 },
       },
+      selfBrowserSurface: "exclude",
       systemAudio: "include",
       windowAudio: "window",
     });

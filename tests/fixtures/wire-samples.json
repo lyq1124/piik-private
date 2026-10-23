@@ -1332,6 +1332,36 @@
       "schema": "client",
       "json": "{\"type\":\"sfu-signal\",\"revision\":9,\"publicationGeneration\":\"publication_12345678\",\"connectionId\":\"connection_12345678\",\"kind\":\"description\",\"description\":{\"type\":\"offer\",\"sdp\":\"v=0\\\\r\\\\n\"},\"media\":{\"codec\":\"vp8\",\"layers\":[{\"rid\":\"\",\"width\":4294967296,\"height\":32768,\"bitrate\":200000000}],\"audio\":false,\"audioBitrate\":128000}}",
       "valid": false
+    },
+    {
+      "name": "voice-join",
+      "schema": "client",
+      "json": "{\"type\":\"voice-command\",\"action\":\"join\"}",
+      "valid": true
+    },
+    {
+      "name": "voice-mute",
+      "schema": "client",
+      "json": "{\"type\":\"voice-command\",\"action\":\"mute\",\"connectionId\":\"voice_connection_12345678\",\"muted\":true}",
+      "valid": true
+    },
+    {
+      "name": "voice-missing-mute",
+      "schema": "client",
+      "json": "{\"type\":\"voice-command\",\"action\":\"mute\",\"connectionId\":\"voice_connection_12345678\"}",
+      "valid": false
+    },
+    {
+      "name": "voice-client-selected-room",
+      "schema": "client",
+      "json": "{\"type\":\"voice-command\",\"action\":\"join\",\"roomId\":\"1234\"}",
+      "valid": false
+    },
+    {
+      "name": "voice-answer",
+      "schema": "client",
+      "json": "{\"type\":\"voice-signal\",\"connectionId\":\"voice_connection_12345678\",\"description\":{\"revision\":1,\"sdp\":{\"type\":\"answer\",\"sdp\":\"v=0\\r\\n\"},\"tracks\":[{\"mid\":\"0\",\"publicationId\":\"voice_publication_12345678\"}]}}",
+      "valid": true
     }
   ],
   "serverMessages": [
@@ -1490,6 +1520,18 @@
     {
       "name": "room-interaction",
       "json": "{\"type\":\"room-interaction\",\"id\":\"event_12345678\",\"requestId\":\"request_12345678\",\"occurredAt\":1700000000010,\"sender\":{\"peerId\":\"peer_12345678\",\"role\":\"host\",\"displayName\":\"Piik friend\"},\"payload\":{\"kind\":\"chat\",\"text\":\"来，看点好康的。 <b>Hello</b> 👋\"}}"
+    },
+    {
+      "name": "voice-offer",
+      "json": "{\"type\":\"voice-signal\",\"connectionId\":\"voice_connection_12345678\",\"description\":{\"revision\":1,\"sdp\":{\"type\":\"offer\",\"sdp\":\"v=0\\r\\n\"},\"tracks\":[{\"mid\":\"0\",\"publicationId\":\"voice_publication_12345678\"}]}}"
+    },
+    {
+      "name": "voice-state",
+      "json": "{\"type\":\"voice-state\",\"peerId\":\"voice_peer_12345678\",\"connectionId\":\"voice_connection_12345678\",\"participants\":[{\"peerId\":\"voice_peer_12345678\",\"publicationId\":\"voice_publication_12345678\",\"name\":\"Room friend\",\"muted\":true}]}"
+    },
+    {
+      "name": "voice-unavailable",
+      "json": "{\"type\":\"voice-error\",\"code\":\"unavailable\"}"
     }
   ]
 }

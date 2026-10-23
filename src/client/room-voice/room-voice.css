@@ -1,0 +1,57 @@
+.lr-room-voice {
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 16px);
+  padding: 12px 14px;
+  margin: 12px 0;
+  background: var(--paper);
+  min-width: 0;
+}
+.lr-room-voice-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lr-room-voice-label {
+  font-weight: 650;
+  margin-right: 2px;
+}
+.lr-room-voice-status,
+.lr-room-voice small {
+  font-size: 0.82rem;
+  opacity: 0.72;
+}
+.lr-room-voice small {
+  display: block;
+  margin-top: 6px;
+}
+.lr-room-voice-settings {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.lr-room-voice-settings label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+.lr-room-voice-settings input {
+  max-width: 160px;
+}
+.lr-room-voice-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 0.8rem;
+  margin-top: 9px;
+  opacity: 0.7;
+}
+.lr-room-voice-error {
+  font-size: 0.85rem;
+  margin: 8px 0 0;
+  line-height: 1.6;
+}

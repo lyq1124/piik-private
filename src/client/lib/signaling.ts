@@ -14,6 +14,8 @@ import { qualitySettingsEqual } from "../media/quality";
 import { debugEvent } from "./debug";
 import { RoomInteractionSession } from "./room-interactions";
 import { getSiteAccess } from "./api";
+import { RoomVoiceSession } from "../room-voice/session";
+import type { IceConfig } from "../../shared/protocol";
 
 type WithoutProtocolEnvelope<T> = T extends {
   type: string;
@@ -78,6 +80,14 @@ function signalUrl(): string {
 }
 
 export class SignalingClient {
+  voice: RoomVoiceSession | null = null;
+  private voiceIce: IceConfig | null = null;
+  enableRoomVoice(): RoomVoiceSession | null {
+    if(this.stopped)return null;
+    if(!this.voice)this.voice=new RoomVoiceSession(message=>this.send(message));
+    if(this.authenticatedPeerId&&this.voiceIce)this.voice.authenticated(this.authenticatedPeerId,this.voiceIce);
+    return this.voice;
+  }
   private remoteInputEnabled = false;
   private audioPresenceEnabled = false;
   private hostAudioAvailable: boolean | null = null;
@@ -171,6 +181,7 @@ export class SignalingClient {
   }
 
   stop(): void {
+    this.voice?.close();
     this.interactions?.close();
     this.stopped = true;
     this.authenticatedPeerId = null;
@@ -429,6 +440,8 @@ export class SignalingClient {
         debugEvent("signal", "authenticated", { role: this.identity.role, generation });
         this.refreshSignalingWatchdog();
         this.interactions?.authenticated(message.peerId);
+        this.voiceIce=message.iceConfig;
+        this.voice?.authenticated(message.peerId,message.iceConfig);
         if (this.remoteInputEnabled) this.send({ type: "subscribe-remote-input" });
         // Discovery can complete after the authentication request was sent.
         if (!routeSelectionRequestedAtAuth && this.identity.role === "viewer" && this.identity.routePreference !== undefined) {
@@ -452,6 +465,7 @@ export class SignalingClient {
         this.identity.roomOnly = true;
         this.hostQualityIntent = null;
       }
+      if (this.voice?.receive(message)) return;
       if (this.interactions?.receive(message)) return;
       if (
         message.type === "host-status" &&
@@ -477,6 +491,7 @@ export class SignalingClient {
       this.socket = null;
       this.authenticatedPeerId = null;
       this.interactions?.disconnected();
+      this.voice?.disconnected();
       debugEvent("signal", "closed", { role: this.identity.role, code: event.code,
         reconnecting: !this.stopped && shouldReconnectSignaling(event.code) });
       this.clearSignalingWatchdog();

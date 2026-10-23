@@ -14,6 +14,7 @@ export class HostAudio {
   private microphoneDevice = "";
   private voiceProcessing = true;
   private closed = false;
+  private microphoneRevision=0;
 
   constructor(source: MediaStream, private changed: (enabled: boolean) => void,
     private kind: BrowserCaptureSource = "browser", private availabilityChanged: (available: boolean) => void = () => {}) {
@@ -60,8 +61,16 @@ export class HostAudio {
     return this.setMicrophone(!this.microphone?.enabled, deviceId);
   }
 
+  releaseMicrophone(): void {
+    if(this.closed)return;
+    ++this.microphoneRevision;
+    const microphone=this.microphone;this.microphone=null;microphone?.stop();
+    this.compose();this.changed(false);this.reportAvailability();
+  }
+
   async setMicrophone(enabled: boolean, deviceId: string, voiceProcessing = this.voiceProcessing): Promise<MediaStream | null> {
     if (this.closed) return null;
+    const revision=++this.microphoneRevision;
     const sameInput = deviceId === this.microphoneDevice && voiceProcessing === this.voiceProcessing;
     if (!enabled || (this.microphone && sameInput)) {
       if (this.microphone && !sameInput) {
@@ -91,9 +100,9 @@ export class HostAudio {
         ...audioInputConstraints(voiceProcessing),
         ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
       } });
-      if (this.closed) return null;
+      if (this.closed || revision!==this.microphoneRevision) return null;
       if (!await resumed) throw new Error("Audio context unavailable");
-      if (this.closed) return null;
+      if (this.closed || revision!==this.microphoneRevision) return null;
       const microphone = stream.getAudioTracks()[0];
       if (!microphone || microphone.readyState === "ended") throw new Error("No live microphone");
       const previous = this.microphone;

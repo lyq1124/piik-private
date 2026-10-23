@@ -14,7 +14,7 @@ import (
 
 var voiceCodec = webrtc.RTPCodecCapability{
 	MimeType: webrtc.MimeTypeOpus, ClockRate: 48_000, Channels: 2,
-	SDPFmtpLine: "minptime=10;useinbandfec=1",
+	SDPFmtpLine: "minptime=10;useinbandfec=1;usedtx=1;maxaveragebitrate=32000;stereo=0",
 }
 
 type voiceReceiveSlot struct {
@@ -24,11 +24,17 @@ type voiceReceiveSlot struct {
 }
 
 type voiceSendSlot struct {
-	mu          sync.Mutex
-	publication VoicePublication
-	transceiver *webrtc.RTPTransceiver
-	track       *webrtc.TrackLocalStaticRTP
-	active      bool
+	mu              sync.Mutex
+	publication     VoicePublication
+	transceiver     *webrtc.RTPTransceiver
+	track           *webrtc.TrackLocalStaticRTP
+	active          bool
+	lastPublication string
+	lastSourceSSRC  uint32
+	lastSequence    uint16
+	lastTimestamp   uint32
+	sequenceOffset  uint16
+	timestampOffset uint32
 }
 
 func (s *voiceSendSlot) disable() {
@@ -47,8 +53,30 @@ func (s *voiceSendSlot) write(publication VoicePublication, packet *rtp.Packet) 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.active && s.publication == publication {
+		// A reused RTP sender retains its SSRC/SRTP replay window. A new
+		// microphone has an independent random clock and sequence origin;
+		// project that origin onto the existing output instead of replaying old
+		// sequence numbers. Keep gaps and reordering within each source intact.
+		forwarded := *packet
+		if s.lastPublication != publication.ID || s.lastSourceSSRC != packet.SSRC {
+			if s.lastPublication != "" {
+				s.sequenceOffset = s.lastSequence + 1 - packet.SequenceNumber
+				s.timestampOffset = s.lastTimestamp + 960 - packet.Timestamp
+			}
+			s.lastPublication = publication.ID
+			s.lastSourceSSRC = packet.SSRC
+			forwarded.SequenceNumber = packet.SequenceNumber + s.sequenceOffset
+			forwarded.Timestamp = packet.Timestamp + s.timestampOffset
+			s.lastSequence, s.lastTimestamp = forwarded.SequenceNumber, forwarded.Timestamp
+		} else {
+			forwarded.SequenceNumber = packet.SequenceNumber + s.sequenceOffset
+			forwarded.Timestamp = packet.Timestamp + s.timestampOffset
+			if int16(forwarded.SequenceNumber-s.lastSequence) > 0 {
+				s.lastSequence, s.lastTimestamp = forwarded.SequenceNumber, forwarded.Timestamp
+			}
+		}
 		// A failed subscriber write belongs to that connection, not the source.
-		_ = s.track.WriteRTP(packet)
+		_ = s.track.WriteRTP(&forwarded)
 	}
 }
 
@@ -69,6 +97,7 @@ type voiceConnection struct {
 	outgoing map[string]*voiceSendSlot
 	remote   map[string]VoicePublication
 	bindings map[string]*webrtc.TrackRemote
+	muted    bool
 	closed   bool
 	readers  sync.WaitGroup
 	// SDP mutations are serialized independently of room signaling and RTP.
@@ -79,6 +108,7 @@ type voiceConnection struct {
 	sequence          uint64
 	negotiatedVersion uint64
 	renegotiate       bool
+	restartICE        bool
 	candidates        []webrtc.ICECandidateInit
 	events            chan VoiceMediaEvent
 	stop              chan struct{}
@@ -203,7 +233,7 @@ func (c *voiceConnection) offer(force bool) error {
 	if err = c.syncSlots(plan); err != nil {
 		return err
 	}
-	offer, err := c.pc.CreateOffer(nil)
+	offer, err := c.pc.CreateOffer(&webrtc.OfferOptions{ICERestart: c.restartICE})
 	if err != nil {
 		return err
 	}
@@ -227,6 +257,7 @@ func (c *voiceConnection) offer(force bool) error {
 	}
 	c.pending = &voiceOffer{description: description, incoming: incoming, version: version}
 	c.renegotiate = false
+	c.restartICE = false
 	c.queue(VoiceMediaEvent{Description: &description})
 	return nil
 }
@@ -442,7 +473,7 @@ func (c *voiceConnection) consume(track *webrtc.TrackRemote, receiver *webrtc.RT
 		c.owner.mu.Lock()
 		pub := c.remote[mid]
 		var outputs []*voiceSendSlot
-		if !c.closed && pub.ID != "" && slices.Contains(c.plan.Publish, pub) {
+		if !c.closed && !c.muted && pub.ID != "" && slices.Contains(c.plan.Publish, pub) {
 			for _, other := range c.owner.connections {
 				if other != c && !other.closed && other.key.room == c.key.room {
 					if out := other.outgoing[pub.ID]; out != nil && slices.Contains(other.plan.Subscribe, pub) {

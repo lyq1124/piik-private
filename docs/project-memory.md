@@ -102,6 +102,11 @@ implementation and routine UI detail.
 
 ## Current Snapshot
 
+The private deployment branch adds opt-in bounded Hosted room voice under
+ADR-0015. It reuses the server UDP mux and authenticated room membership while
+keeping picture routing independent. This is candidate work with device and
+deployment acceptance outstanding; the saved v2.2.1 baseline remains recoverable.
+
 Optional attended keyboard/mouse control follows the committed media route back
 to the native Host. One source-scoped grant admits one controller; source change,
 stop and revocation retire it. It adds no separate connection planner or listener.

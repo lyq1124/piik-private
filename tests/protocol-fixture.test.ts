@@ -143,6 +143,8 @@ describe("shared wire fixture", () => {
         "client:stop-sharing",
         "client:subscribe-room-interactions",
         "client:viewer-quality-evidence",
+        "client:voice-command",
+        "client:voice-signal",
         "createRoomRequest",
         "replaceRoomRequest",
         "roomAccessUpdateRequest:revoke-viewer-grant",
@@ -192,6 +194,9 @@ describe("shared wire fixture", () => {
       "viewer-presence",
       "viewer-quality-evidence",
       "viewer-route-preference",
+      "voice-error",
+      "voice-signal",
+      "voice-state",
     ]);
   });
 

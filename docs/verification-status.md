@@ -9,6 +9,14 @@ implementation and obsolete package history.
 
 ## Current Evidence
 
+The private ADR-0015 candidate has isolated Chromium synthetic-camera/audio
+evidence for four-way decoded PCM, P2P and forced-server picture paths,
+join/leave retirement, fresh signaling authentication, picture pause/stop/start
+and a 390px viewport. This does not establish Android/iOS or smart-glasses
+hardware permission/duplex behavior, acoustic echo removal, all-system capture
+exclusion, public-network reachability, hour-long stability or production CPU
+and memory budgets. Those remain acceptance work, not inferred passes.
+
 Windows App and Browser are the owner's primary acceptance targets. Current
 Go packages embed their Web assets and do not run a Node backend.
 [Status](./status.md#accepted-release-contract) owns the accepted contract tuple
