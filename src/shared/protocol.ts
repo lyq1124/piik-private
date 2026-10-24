@@ -245,6 +245,7 @@ export const runtimeCapabilitiesSchema = z.object({
   roomVoice: z.boolean().default(false),
   roomVoiceListeningPresence: z.boolean().default(false),
   roomVoiceBitrate: z.boolean().optional(),
+  roomVoiceChannelControl: z.boolean().optional(),
   relayVolunteer: z.boolean().default(false),
   roomReactionIds: z.array(z.string().max(32).regex(/^[a-z][a-z0-9-]*$/)).max(64).optional(),
   hostRoomSession: z.boolean().default(false),
@@ -357,6 +358,9 @@ const voiceSignalShape = {
   renegotiate: z.literal(true).optional(),
 };
 export const roomVoiceCommandSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("open") }).strict(),
+  z.object({ action: z.literal("close") }).strict(),
+  z.object({ action: z.literal("leave-self") }).strict(),
   z.object({ action: z.literal("join") }).strict(),
   z.object({ action: z.literal("leave") }).strict(),
   z.object({ action: z.literal("publish") }).strict(),
@@ -941,7 +945,7 @@ const signalingChallengeSequenceSchema = z
 
 export const clientMessageSchema = z.union([
   z.object({ type: z.literal("set-relay-volunteer"), enabled: z.boolean(), capacity: z.number().int().min(0).max(MAX_VIEWERS_PER_ROOM_LIMIT) }).strict(),
-  z.object({ type: z.literal("subscribe-room-voice"), deafened: z.boolean().optional(), bitrate: z.literal(true).optional() }).strict(),
+  z.object({ type: z.literal("subscribe-room-voice"), deafened: z.boolean().optional(), bitrate: z.literal(true).optional(), channelControl: z.literal(true).optional() }).strict(),
   z.object({ type: z.literal("room-voice-command"), command: roomVoiceCommandSchema }).strict(),
   z.object({ type: z.literal("room-voice-signal"), ...voiceSignalShape }).strict()
     .refine(value => Number(!!value.description) + Number(!!value.candidate) + Number(!!value.renegotiate) === 1),

@@ -41,9 +41,12 @@ is absent, provided the room service and their admitted sessions remain availabl
 [Rooms and access](./rooms-access.md#room-interactions) owns interaction authority
 and retention; [status](../status.md#accepted-interaction-phase) owns release readiness.
 
-The Host can explicitly **Create room** before sharing.
-Chat and voice use tabs in the existing interaction window, including its
-detached presentation. Closing or changing that window does not leave voice or
+The Host can explicitly **Create room** before sharing. New capable room sessions
+open the voice channel immediately, then ask about personal participation and,
+after joining, microphone capture in two separate dialogs. These prompts do not
+repeat on reconnect or source replacement.
+Chat and voice use tabs in the default-open docked interaction window, including its
+detached presentation. Folding or changing that window does not leave voice or
 stop capture. Microphone, admission and connection states stay literal; an
 enabled microphone is not proof that someone is speaking. The
 [room voice contract](./rooms-access.md#room-voice) owns channel activation and

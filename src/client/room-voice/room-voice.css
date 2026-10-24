@@ -25,3 +25,12 @@
 .lr-voice-toolbar { display: flex; flex: 1; align-items: center; gap: 6px; min-width: 0; }
 .lr-voice-toolbar > .lr-comic-tip-wrap { flex: none; margin-left: auto; }
 .lr-voice-quick-controls { display: flex; flex: none; gap: 6px; align-items: center; }
+.lr-voice-relay-only { width: 100%; margin: 2px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.lr-voice-onboarding { width: min(460px, calc(100vw - 32px)); padding: 24px; color: var(--ink); border: 1px solid var(--control-edge); border-radius: 24px; background: var(--surface-glaze) var(--paper); box-shadow: var(--panel-shadow); }
+.lr-voice-onboarding::backdrop { background: rgb(10 20 35 / .34); backdrop-filter: blur(3px); }
+.lr-voice-onboarding header { display: flex; align-items: center; gap: 12px; }
+.lr-voice-onboarding header > svg { flex: none; color: var(--action); }
+.lr-voice-onboarding h2 { flex: 1; margin: 0; font-size: 18px; line-height: 1.4; }
+.lr-voice-onboarding p { margin: 20px 0; font-size: 14px; line-height: 1.8; }
+.lr-voice-onboarding .lr-voice-onboarding-note { color: var(--muted); font-size: 12px; }
+.lr-voice-onboarding footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 24px; }

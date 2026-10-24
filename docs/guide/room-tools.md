@@ -6,15 +6,16 @@ Chat and voice work before, during and after picture sharing.
 Remote control requires an active App window or screen share.
 
 - **[Chat and reactions](#chat-and-reactions):** join the room and open **Interact → Chat**.
-- **[Room voice](#room-voice):** the Host opens room voice; each speaker enables their own microphone.
+- **[Room voice](#room-voice):** choose whether to join, then whether to enable your microphone.
 - **[Remote control](#let-a-friend-control-your-shared-screen):** the Host shares an App window/screen, then enables and authorizes control.
 
 ## Chat and reactions
 
-1. Select **Interact** below the sofa, then open **Chat** and send a message.
+1. After joining, the interaction panel opens on **Chat**. Send a message.
 2. Select a person on the sofa or an avatar in Chat/Voice to open their reaction
    menu. **More reactions** opens the full palette.
-3. Move or resize the interaction window to keep it beside what you are watching.
+3. The panel docks beside the picture on desktop and below it on smaller screens.
+   Fold it with the title-bar button; **Interact** below the sofa opens it again.
 
 Your own reactions appear above you; reactions sent to a friend fly towards them.
 
@@ -46,15 +47,17 @@ Chat travels through the room's server and is **not end-to-end encrypted**.
 ## Room voice
 
 1. The Host creates a room and sends its invitation; no picture share is needed.
-2. The Host opens **Interact → Voice** and selects **Open room voice**.
-   Room members can then select **Join voice**, without another approval.
-3. To speak, select **Microphone** and grant browser access. Joining alone never
-   turns on your microphone.
+2. On supporting sites, room voice opens automatically. Each person chooses
+   **Join voice** or **Not now** in the first prompt.
+3. After joining, choose whether to enable your microphone. Only enabling it
+   requests browser access. Dismissing either prompt keeps that choice off;
+   reconnecting does not repeat it. Older sites retain the Host's **Open room voice** flow.
 
 ![Room voice with two sample participants. Microphone and listening controls are at the bottom; voice settings are beside the tabs.](../assets/guide/room-voice.en.png#gh-light-mode-only)
 ![Room voice with two sample participants. Microphone and listening controls are at the bottom; voice settings are beside the tabs.](../assets/guide/room-voice.en.dark.png#gh-dark-mode-only)
 
-*Host view with sample participants. A Viewer sees Leave voice instead of Close room voice.*
+*Host view with sample participants. On supporting sites, the Host can leave
+personally or close the channel separately.*
 
 Microphone capture needs browser-accepted HTTPS or `localhost`. Use the App's
 HTTPS invitation for LAN and [virtual-LAN rooms](./network.md#optional-a-virtual-lan).
@@ -80,8 +83,9 @@ available after picture sharing stops.
 
 Voice stays connected when picture sharing stops. It also stays active when you
 close or detach the interaction window. Viewers choose **Leave voice** to leave;
-the Host's **Close room voice** ends voice for everyone. Reopening does not
-rejoin Viewers or turn on their microphones.
+the Host's **Close room voice** ends voice for everyone. A Host who leaves
+personally can keep the page open to forward other members' voices without
+listening or capturing a microphone. Reopening does not rejoin anyone or turn on microphones.
 
 <details>
 <summary>Source sound, echo and remembered settings</summary>

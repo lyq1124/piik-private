@@ -161,20 +161,27 @@ compatibility and design rationale.
 
 ## Room Voice
 
-Optional room voice uses the same authenticated room.
-The Host joining opens room voice; leaving closes it for everyone. Channel
-availability is derived from that membership, not a separate switch. Authenticated
-room members can join an open channel without another approval. Joining never
-opens a microphone. Closing clears everyone's voice membership and publications;
-reopening does not rejoin Viewers or restart microphones. Each speaker explicitly
-starts capture and owns one server-assigned publication; mute, leaving and
-session replacement retire that publication. Local mute changes
-only the listener's playback, including when that listener relays for others.
-Pausing listening mutes all local room-voice playback without changing the
-microphone, membership or forwarding. Microphone and listening are independent.
-The Host owns one room-wide voice bitrate ceiling. Changing it does not open
-voice, activate microphones or replace routes. It is live room state, not App
-configuration; [media quality](./media-quality.md#capture-and-controls) owns its bounds.
+Optional room voice uses the same authenticated room. A Host that negotiates
+channel control opens the channel on its first room subscription, independently
+of personal participation. Its explicit open/close actions own availability;
+join/leave-self own only that Host's listening membership. Closing retires all
+memberships and publications; reopening restores neither. A repeated subscription
+or reconnect does not reopen a deliberately closed channel. Legacy Hosts retain
+the established join-to-open and leave-to-close command behavior.
+
+Authenticated members choose whether to join an open channel. The first room
+entry asks about joining; after the first acknowledged join, a separate prompt
+asks about microphone capture. Both choices last for the current page's admitted
+room session, including reconnects. Refreshing or entering another room starts
+new choices. Opening the channel or joining never opens a microphone.
+
+Each speaker explicitly starts capture and owns one server-assigned publication;
+mute, leaving and session replacement retire that publication. Local mute and
+pausing listening affect local playback only, not membership or forwarding.
+A capable Host outside personal voice participation may relay the room tree, as
+explained in its UI, without playback or a microphone publication. Forwarding
+permission never grants listening membership or publishing permission. An open
+channel without joined members allocates no voice connections.
 
 Joining also authorizes a participant to forward decodable voice. A video relay
 outside voice cannot carry it; the existing route controller selects a joined

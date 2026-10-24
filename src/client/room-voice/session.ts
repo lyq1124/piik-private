@@ -21,6 +21,7 @@ export interface RoomVoiceSnapshot {
   input: RoomPreferences["voiceInput"];
   listeningVolume: number;
   peerVolumes: ReadonlyMap<string, number>;
+  channelControl?: boolean;
 }
 interface CaptureRequest { input?: MicrophoneInput; context?: AudioContext; settings: RoomPreferences["voiceInput"] }
 
@@ -39,9 +40,11 @@ export class RoomVoiceSession {
   private scheduled = false;
   private closed = false;
   private epoch = 0;
+  private receivedAuthority = false;
 
   constructor(private readonly send: (message: ClientMessage) => boolean, iceConfig: IceConfig,
-    private readonly listeningPresence = false, private readonly bitrate = false) {
+    private readonly listeningPresence = false, private readonly bitrate = false, private readonly channelControl = false) {
+    if (channelControl) this.state.channelControl = true;
     this.endpoint = new BrowserVoiceEndpoint(iceConfig, message => this.state.connected && this.send(message), () => {
       this.refresh(); this.schedule();
     });
@@ -65,7 +68,8 @@ export class RoomVoiceSession {
   updateIceConfig(config: IceConfig): void { this.endpoint.updateIceConfig(config); }
   subscribeRoom(): void {
     this.send({ type: "subscribe-room-voice", ...(this.listeningPresence ? { deafened: this.state.deafened } : {}),
-      ...(this.bitrate ? { bitrate: true as const } : {}) });
+      ...(this.bitrate ? { bitrate: true as const } : {}),
+      ...(this.channelControl ? { channelControl: true as const } : {}) });
   }
   authenticated(peerId: string, role: "host" | "viewer"): void {
     if (this.closed) return;
@@ -94,6 +98,15 @@ export class RoomVoiceSession {
     if (message.type === "room-voice-state") {
       if (message.revision < (this.state.room?.revision ?? 0)) return true;
       const me = message.members.find(member => member.peerId === this.state.peerId);
+      if (!this.receivedAuthority) {
+        this.receivedAuthority = true;
+        // A fresh page asks again. A reconnect of this same session retains
+        // participation, but a server grace period is not a fresh page's consent.
+        if (this.channelControl && me?.joined) {
+          this.command({ action: this.state.role === "host" ? "leave-self" : "leave" });
+          return true;
+        }
+      }
       if (!message.enabled || !me?.joined) { this.cancelCapture(); this.publishing = null; }
       this.update({ room: message, ...(!message.enabled || this.state.error === "closed" ? { error: null } : {}) });
       // Authority retirement is synchronous even if an SDP operation is pending.
@@ -127,7 +140,7 @@ export class RoomVoiceSession {
   }
   command(command: RoomVoiceCommand): boolean {
     if (this.closed || !this.state.connected) return false;
-    if (command.action === "leave") this.stopMicrophone();
+    if (["leave", "leave-self", "close"].includes(command.action)) this.stopMicrophone();
     this.update({ error: null });
     if (this.send({ type: "room-voice-command", command })) return true;
     this.update({ error: "transport" }); return false;

@@ -4,9 +4,10 @@ import "errors"
 
 // Voice is an opted-in room capability; it does not change the video messages.
 type SubscribeRoomVoiceMessage struct {
-	Type     string `json:"type"`
-	Deafened *bool  `json:"deafened,omitempty"`
-	Bitrate  bool   `json:"bitrate,omitempty"`
+	Type           string `json:"type"`
+	Deafened       *bool  `json:"deafened,omitempty"`
+	Bitrate        bool   `json:"bitrate,omitempty"`
+	ChannelControl bool   `json:"channelControl,omitempty"`
 }
 
 func (SubscribeRoomVoiceMessage) isClientMessage() {}
@@ -53,7 +54,7 @@ func (v *RoomVoiceCommand) UnmarshalJSON(data []byte) error {
 		if len(f) != 2 || v.Deafened == nil {
 			return errors.New("invalid voice listening state")
 		}
-	case "join", "leave", "publish":
+	case "join", "leave", "publish", "open", "close", "leave-self":
 		if len(f) != 1 {
 			return errors.New("unexpected voice command fields")
 		}

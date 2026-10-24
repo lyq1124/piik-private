@@ -218,3 +218,36 @@
   .lr-reaction-glyph { animation: none; }
   .lr-reaction-accents { display: none; }
 }
+/* The interaction shell participates in the room layout; its session stays
+   beside the couch, including while its stable portal is in a PiP window. */
+.lr-room-interactions { display: contents; }
+.lr-floating-panel.is-docked {
+  display: flex; position: relative; inset: auto; flex-direction: column;
+  width: 100%; height: 100%; min-width: 0; min-height: 0;
+  max-width: none; max-height: none; overflow: hidden; contain: size;
+  transform-origin: center; animation: none;
+}
+.lr-floating-panel.is-docked[hidden] { display: none; }
+.lr-floating-panel.is-docked .lr-floating-header { cursor: default; touch-action: auto; padding-left: 10px; }
+.lr-room:not(.is-theater):has(.lr-interaction-panel.is-docked:not([hidden])) { width: min(1440px, 100%); }
+.lr-scene:has(.lr-interaction-panel.is-docked:not([hidden])) {
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 30%, 420px);
+  column-gap: 12px; align-items: start;
+}
+.lr-scene:has(.lr-interaction-panel.is-docked:not([hidden])) > :not(.lr-tv),
+.lr-scene:has(.lr-interaction-panel.is-docked:not([hidden])) .lr-interaction-couch { grid-column: 1; }
+.lr-scene:has(.lr-interaction-panel.is-docked:not([hidden])) > .lr-tv { grid-column: 1; grid-row: 1; width: 100%; }
+.lr-scene .lr-interaction-panel.is-docked { grid-column: 2; grid-row: 1; align-self: stretch; }
+.lr-room.is-theater .lr-scene { display: block; }
+.lr-room.is-theater .lr-interaction-panel.is-docked { display: none; }
+@media (max-width: 1023px) {
+  .lr-scene:has(.lr-interaction-panel.is-docked:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
+  .lr-scene .lr-interaction-panel.is-docked {
+    grid-column: 1; grid-row: 2; height: clamp(360px, 50dvh, 560px); margin-top: 12px;
+  }
+}
+@media (min-width: 1024px) {
+  .lr-room:not(.is-theater):has(.lr-interaction-panel.is-docked:not([hidden])) > .lr-deck {
+    width: calc(100% - clamp(320px, 30%, 420px) - 12px); margin-inline: 0;
+  }
+}

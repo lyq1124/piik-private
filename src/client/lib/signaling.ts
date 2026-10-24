@@ -157,10 +157,10 @@ export class SignalingClient {
     }
   }
 
-  enableRoomVoice({ listeningPresence = false, bitrate = false }: { listeningPresence?: boolean; bitrate?: boolean } = {}): RoomVoiceSession | null {
+  enableRoomVoice({ listeningPresence = false, bitrate = false, channelControl = false }: { listeningPresence?: boolean; bitrate?: boolean; channelControl?: boolean } = {}): RoomVoiceSession | null {
     if (this.stopped) return null;
     if (!this.roomVoice) {
-      this.roomVoice = new RoomVoiceSession(message => this.send(message), this.voiceIceConfig, listeningPresence, bitrate);
+      this.roomVoice = new RoomVoiceSession(message => this.send(message), this.voiceIceConfig, listeningPresence, bitrate, channelControl);
       if (this.authenticatedPeerId) {
         this.roomVoice.authenticated(this.authenticatedPeerId, this.identity.role);
         this.roomVoice.subscribeRoom();

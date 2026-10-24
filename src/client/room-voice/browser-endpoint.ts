@@ -43,6 +43,7 @@ interface Received {
   audio?: HTMLAudioElement;
   playback?: ViewerAudio;
   blocked: boolean;
+  relayAudio?: HTMLAudioElement;
 }
 
 // One authorized room plan owns these audio transports. This adapter neither
@@ -141,7 +142,7 @@ export class BrowserVoiceEndpoint {
     for (const [key, binding] of this.received) {
       const config = allowed.get(binding.connectionId);
       if (!config?.receive.includes(binding.publicationId)) this.removeReceived(key);
-      else if (config.pending && binding.audio) this.removePlayback(binding);
+      else if ((config.pending || !me?.joined) && binding.audio) this.removePlayback(binding);
     }
     for (const muted of this.muted) if (!state?.members.some(member => member.peerId === muted)) this.muted.delete(muted);
     for (const peer of this.peerVolumes.keys()) if (!state?.members.some(member => member.peerId === peer)) this.peerVolumes.delete(peer);
@@ -250,7 +251,10 @@ export class BrowserVoiceEndpoint {
   }
   private removeReceived(key: string): void {
     const binding = this.received.get(key);
-    if (binding) this.removePlayback(binding);
+    if (binding) {
+      this.removePlayback(binding);
+      if (binding.relayAudio) { binding.relayAudio.pause(); binding.relayAudio.srcObject = null; }
+    }
     this.received.delete(key);
   }
   private bindReceivers(connection: Connection): void {
@@ -266,7 +270,17 @@ export class BrowserVoiceEndpoint {
         binding = { connectionId: connection.config.connectionId, publicationId, track, blocked: false };
         this.received.set(key, binding);
       }
-      if (!connection.config.pending && !binding.audio) {
+      // Chromium needs a media-element consumer before remote audio can feed
+      // another sender. This detached, permanently muted renderer is not local
+      // listening. https://issues.chromium.org/issues/40094084
+      if (!connection.config.pending && !binding.relayAudio &&
+          !this.state?.members.some(member => member.peerId === this.peerId && member.joined)) {
+        const renderer = binding.relayAudio = new Audio();
+        renderer.muted = true; renderer.volume = 0; renderer.autoplay = true;
+        renderer.srcObject = new MediaStream([track]);
+        void renderer.play().catch(() => {});
+      }
+      if (!connection.config.pending && !binding.audio && this.state?.members.some(member => member.peerId === this.peerId && member.joined)) {
         const audio = binding.audio = new Audio();
         audio.autoplay = true; audio.hidden = true;
         const stream = new MediaStream([track]);

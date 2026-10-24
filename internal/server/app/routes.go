@@ -84,6 +84,7 @@ func (s *Server) route(
 			RoomVoice:                  true,
 			RoomVoiceListeningPresence: true,
 			RoomVoiceBitrate:           true,
+			RoomVoiceChannelControl:    true,
 			RelayVolunteer:             true,
 			RoomReactionIDs:            protocol.RoomReactionIDs,
 			RemoteInput:                true,

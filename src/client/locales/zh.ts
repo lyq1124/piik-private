@@ -2,6 +2,14 @@ import type { GlyphName } from "../ui/icons";
 
 // Canonical catalog: add keys here first; every other locale must match it.
 export const zh = {
+  "voice.askJoin": "是否加入房间语音？",
+  "voice.askJoinHint": "加入后可以听到其他成员的声音。麦克风会保持关闭，稍后由你决定是否开启。",
+  "voice.askMicrophone": "是否开启麦克风？",
+  "voice.askMicrophoneHint": "你已加入语音。开启麦克风后，其他成员才能听到你；浏览器可能会请求授权。",
+  "voice.notNowJoin": "暂不加入",
+  "voice.notNowMicrophone": "暂不开启",
+  "voice.relayOnly": "仅协助转发语音，不收听、不开麦。请保持房主页面打开。",
+
   "state.peer.present": "已在房间",
   "state.peer.voiceConnected": "语音已连接",
   "host.topology.idle": "已在房间，暂无媒体线路。",

@@ -2802,7 +2802,7 @@ export function HostPage({
     remoteInputPeersRef.current = [];
     void getRuntimeCapabilities().then(capabilities => {
       if (signalRef.current === signal && capabilities.roomInteractions) setInteractionSession(signal.enableRoomInteractions(capabilities.roomReactionIds));
-      if (signalRef.current === signal && capabilities.roomVoice) setRoomVoiceSession(signal.enableRoomVoice({ listeningPresence: capabilities.roomVoiceListeningPresence, bitrate: capabilities.roomVoiceBitrate }));
+      if (signalRef.current === signal && capabilities.roomVoice) setRoomVoiceSession(signal.enableRoomVoice({ listeningPresence: capabilities.roomVoiceListeningPresence, bitrate: capabilities.roomVoiceBitrate, channelControl: capabilities.roomVoiceChannelControl }));
       if (signalRef.current === signal && capabilities.remoteInput) signal.enableRemoteInput();
       if (signalRef.current === signal && capabilities.coPlayPresence) signal.enableCoPlayPresence();
       if (signalRef.current === signal && capabilities.audioPresence) signal.enableAudioPresence();

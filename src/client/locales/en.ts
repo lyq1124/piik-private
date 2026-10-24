@@ -2,6 +2,14 @@ import type { CopyKey, PlayfulCatalog, TitleFrameCatalog } from "./zh";
 
 // Community translations are data-only and type-checked against zh.
 export const en: Record<CopyKey, string> = {
+  "voice.askJoin": "Join room voice?",
+  "voice.askJoinHint": "Join to hear the other participants. Your microphone stays off until you choose to enable it.",
+  "voice.askMicrophone": "Turn on your microphone?",
+  "voice.askMicrophoneHint": "You have joined voice. Enable your microphone so others can hear you. Your browser may ask for permission.",
+  "voice.notNowJoin": "Not now",
+  "voice.notNowMicrophone": "Keep microphone off",
+  "voice.relayOnly": "Relaying voice only, without listening or microphone capture. Keep the Host page open.",
+
   "state.peer.present": "In the room",
   "state.peer.voiceConnected": "Voice connected",
   "host.topology.idle": "In the room. No active media routes.",

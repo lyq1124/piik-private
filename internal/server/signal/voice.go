@@ -16,16 +16,17 @@ type voiceMember struct {
 // Room authority owns voice activation and publication identity. Connections below
 // are physical facets of router.controller's graph, never another topology.
 type roomVoice struct {
-	hostPeerID  string
-	bitrate     protocol.Int
-	revision    int64
-	members     map[string]*voiceMember
-	connections map[string]*voiceEdge
+	hostPeerID         string
+	channelOpen        bool
+	channelInitialized bool
+	bitrate            protocol.Int
+	revision           int64
+	members            map[string]*voiceMember
+	connections        map[string]*voiceEdge
 }
 
 func (v *roomVoice) enabled() bool {
-	host := v.members[v.hostPeerID]
-	return host != nil && host.joined
+	return v.channelOpen
 }
 
 func (v *roomVoice) leaveAll() {
@@ -77,6 +78,18 @@ func (s *Server) subscribeRoomVoice(sess *session, auth *authenticatedSession, d
 	}
 	m.deafened = deafened
 	sess.roomVoiceListeningPresence = deafened != nil
+	if auth.role == protocol.RoleHost {
+		if sess.roomVoiceChannelControl {
+			if !v.channelInitialized {
+				v.channelOpen = true
+			}
+		} else if !m.joined {
+			// A legacy Host has not consented to relay without joining.
+			v.channelOpen = false
+			v.leaveAll()
+		}
+		v.channelInitialized = true
+	}
 	s.syncVoiceDemand(auth.roomID)
 	s.syncRoomVoice(auth.roomID)
 }
@@ -103,6 +116,14 @@ func (s *Server) voiceAllowed(roomID, peerID string) bool {
 	return sess != nil && s.voices[roomID].enabled() && m.joined
 }
 
+// A capable Host can forward the room tree without listening or publishing.
+// This permission never authorizes a microphone or makes it a listener.
+func (s *Server) voiceTransportAllowed(roomID, peerID string) bool {
+	sess, m := s.voiceSession(roomID, peerID)
+	return sess != nil && s.voices[roomID].enabled() &&
+		(m.joined || peerID == s.voices[roomID].hostPeerID && sess.roomVoiceChannelControl)
+}
+
 func (s *Server) handleRoomVoiceCommand(sess *session, auth *authenticatedSession, command protocol.RoomVoiceCommand) {
 	if !sess.roomVoice {
 		s.voiceError(sess, "not-allowed")
@@ -114,6 +135,20 @@ func (s *Server) handleRoomVoiceCommand(sess *session, auth *authenticatedSessio
 		return
 	}
 	switch command.Action {
+	case "open", "close", "leave-self":
+		if auth.role != protocol.RoleHost || !sess.roomVoiceChannelControl {
+			s.voiceError(sess, "not-allowed")
+			return
+		}
+		switch command.Action {
+		case "open":
+			v.channelOpen = true
+		case "close":
+			v.channelOpen = false
+			v.leaveAll()
+		case "leave-self":
+			m.joined, m.publicationID = false, ""
+		}
 	case "bitrate":
 		if auth.role != protocol.RoleHost || !sess.roomVoiceBitrate {
 			s.voiceError(sess, "not-allowed")
@@ -136,8 +171,12 @@ func (s *Server) handleRoomVoiceCommand(sess *session, auth *authenticatedSessio
 			return
 		}
 		m.joined = true
+		if auth.role == protocol.RoleHost {
+			v.channelOpen = true
+		}
 	case "leave":
 		if auth.role == protocol.RoleHost {
+			v.channelOpen = false
 			v.leaveAll()
 		} else {
 			m.joined, m.publicationID = false, ""
@@ -194,6 +233,9 @@ func (s *Server) syncVoiceDemand(roomID string) {
 			}
 		}
 		return
+	}
+	if !s.voiceAllowed(roomID, v.hostPeerID) && s.voiceTransportAllowed(roomID, v.hostPeerID) {
+		listeners = append(listeners, v.hostPeerID)
 	}
 	host, ok := s.store.GetConnectedHost(roomID)
 	if !ok {

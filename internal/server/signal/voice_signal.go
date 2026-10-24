@@ -35,7 +35,7 @@ func (s *Server) handleRoomVoiceSignal(sess *session, auth *authenticatedSession
 		return
 	}
 	edge := s.voiceConnection(auth.roomID, auth.peerID, sess.sessionID, message.ConnectionID)
-	if edge == nil || !s.voiceAllowed(auth.roomID, auth.peerID) {
+	if edge == nil || !s.voiceTransportAllowed(auth.roomID, auth.peerID) {
 		return
 	}
 	if edge.transport == "sfu" {
@@ -207,7 +207,7 @@ func (s *Server) voiceCandidateReady(roomID, connectionID string) bool {
 			if root := v.connections[prepared.publicationGeneration]; root != nil {
 				return root.connected[""] && root.connected[root.child]
 			}
-			return !s.voiceAllowed(roomID, rm.hostPeerID)
+			return !s.voiceTransportAllowed(roomID, rm.hostPeerID)
 		}
 		return false
 	}

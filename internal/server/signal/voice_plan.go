@@ -115,7 +115,7 @@ func (s *Server) roomVoiceEdges(roomID string, v *roomVoice) map[string]*voiceEd
 	}
 	snapshot := rm.controller.Snapshot()
 	add := func(logical, parent, child, transport string, pending bool, revision int64) {
-		if !s.voiceAllowed(roomID, child) || parent != "" && !s.voiceAllowed(roomID, parent) {
+		if !s.voiceTransportAllowed(roomID, child) || parent != "" && !s.voiceTransportAllowed(roomID, parent) {
 			return
 		}
 		childSession, _ := s.voiceSession(roomID, child)

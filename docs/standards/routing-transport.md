@@ -124,7 +124,9 @@ The directed tree still places each Viewer under one parent. Independent Opus
 publications travel both ways along its permitted edges, excluding the ingress
 branch. Voice uses a companion WebRTC audio connection on each selected edge;
 picture retains its existing Browser/Native sender and adaptation owners.
-There is no all-pairs mesh or second route planner. SFU voice reuses its existing
+A capable Host can be the forwarding root without joining for playback; only
+actual joined members create listening demand. An empty open channel creates no
+audio edges. There is no all-pairs mesh or second route planner. SFU voice reuses its existing
 UDP listener and admission, including on SFU-only sites.
 
 A candidate carrying picture and voice commits only after both decoded-picture

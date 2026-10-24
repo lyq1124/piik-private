@@ -253,3 +253,29 @@ it("preserves a valid microphone request and source when an unrelated room voice
   expect(mic.track.stop).not.toHaveBeenCalled();
   session.close();
 });
+
+it("negotiates independent channel control without starting capture", () => {
+  const messages: ClientMessage[] = [];
+  const session = new RoomVoiceSession(message => { messages.push(message); return true; }, { iceServers: [] }, false, false, true);
+  session.authenticated("host", "host");
+  session.subscribeRoom();
+  expect(messages).toEqual([{ type: "subscribe-room-voice", channelControl: true }]);
+  expect(session.getSnapshot()).toMatchObject({ channelControl: true, microphone: false, capturePending: false });
+  session.close();
+});
+
+it("does not treat retained server membership as a fresh page's consent", () => {
+  const messages: ClientMessage[] = [];
+  const session = new RoomVoiceSession(message => { messages.push(message); return true; }, { iceServers: [] }, false, false, true);
+  session.authenticated("self", "viewer");
+  session.receive(room(1));
+  expect(messages).toEqual([{ type: "room-voice-command", command: { action: "leave" } }]);
+  expect(session.getSnapshot().room).toBeNull();
+  session.receive(room(2, false));
+  expect(session.getSnapshot().room?.members[0]?.joined).toBe(false);
+  session.authenticated("self", "viewer");
+  session.receive(room(3));
+  expect(messages).toHaveLength(1);
+  expect(session.getSnapshot().room?.members[0]?.joined).toBe(true);
+  session.close();
+});

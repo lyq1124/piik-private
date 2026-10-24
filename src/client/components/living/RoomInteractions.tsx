@@ -44,7 +44,7 @@ function InteractionPanel({ session, state, voice, ...couch }: ConnectedProps & 
   state: ReturnType<RoomInteractionSession["getSnapshot"]>;
 }) {
   const { t, vis } = useCopy();
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
   const [chatDocument, setChatDocument] = useState<Document | null>(null);
   const detached = Boolean(chatDocument && chatDocument !== document);
   const [settingsOpen, setSettingsOpen] = useState<"chat" | "voice" | null>(null);
@@ -155,7 +155,7 @@ function InteractionPanel({ session, state, voice, ...couch }: ConnectedProps & 
         })}
       </p>)}
     </div>
-    <FloatingPanel id={id} trigger={`${id}-toggle`} icon={settingsOpen ? "sliders" : "chat"} className="lr-interaction-panel" detachable
+    <FloatingPanel id={id} trigger={`${id}-toggle`} icon={settingsOpen ? "sliders" : "chat"} className="lr-interaction-panel" detachable docked expanded={chatOpen}
       title={t(settingsOpen === "voice" ? "voice.settings" : settingsOpen ? "interaction.settings" : "interaction.title")}
       onOpenChange={(open, owner) => { setChatOpen(open); setChatDocument(owner); setPanelTarget(null); }}>
       {!settingsOpen && <div className="lr-interaction-navigation">
@@ -267,8 +267,8 @@ function InteractionPanel({ session, state, voice, ...couch }: ConnectedProps & 
           <Btn id={`${id}-toggle`} icon="chat" title={detached ? "interaction.focus" : chatOpen ? "interaction.close" : "interaction.open"}
             cap="interaction.open" expanded={chatOpen} controls={detached ? undefined : id}
             hint={detached ? "hint-window-detach" : chatOpen ? "hint-close" : "hint-chat-open"}
-            tone={chatOpen ? "on" : undefined} popoverTarget={detached ? undefined : id}
-            onClick={detached ? () => chatDocument?.defaultView?.focus() : undefined} />
+            tone={chatOpen ? "on" : undefined}
+            onClick={detached ? () => chatDocument?.defaultView?.focus() : () => setChatOpen(open => !open)} />
           {unread > 0 && <span className="lr-interaction-unread" aria-label={t("interaction.unread", { count: String(unread) })}>{unread}</span>}
         </span>} />
       <ReactionEffects state={state} participants={participants} area={area} now={session.now} />

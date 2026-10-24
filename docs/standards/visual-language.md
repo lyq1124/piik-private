@@ -133,7 +133,7 @@ that every popup should acquire.
 | Work through related settings | Inline disclosure or tabs, as in `SharingSettings`; expand into page flow rather than cover the picture |
 | Complete a task that blocks the page | Existing native modal dialog, such as share-failure help; contain focus and return it on close |
 | Choose a source inside the television | TV-local nonmodal dialog; keep its own Tab loop, inner guidance before Escape cancellation, and return focus to the current share action on close. Surrounding room controls remain available to the pointer |
-| Keep a room tool available while watching or working | `FloatingPanel`, as used for interactions and Host remote permissions; retain its position without reflowing the room |
+| Keep a room tool available while watching or working | Interactions use the shared panel shell docked beside the stage; other room tools retain `FloatingPanel` placement |
 | Use a tool outside the page | Optional `usePanelWindow` on capable browsers; reuse the same content/session, as with interactions, remote permissions and the docked remote keyboard |
 
 Chat and voice share one settings entry beside their tabs. Returning from either
@@ -144,8 +144,12 @@ or touch hold. It uses the guidance timing constants and anchored popover owner,
 replaces a hint with an actual control, and never widens the participant row.
 Settings remain an explicit touch entry for microphone and master volume.
 
-Persistent room utilities use the shared floating panel without reflowing the
-living room. The shell owns visibility, focus return, movement, resizing and
+Interactions default open after admission. At desktop widths the stage and
+interaction panel form one centered composition, with equal outer heights;
+controls and the couch remain beneath the stage. Narrow layouts stack the panel
+below it. The in-page interaction shell folds but cannot move or resize; its
+optional detached window still uses the browser frame. Other persistent room
+utilities use the shared floating panel without reflowing the living room. The shell owns visibility, focus return, movement, resizing and
 viewport/keyboard bounds; contents retain their domain state. Support title-bar
 dragging, corner resizing and equivalent keyboard controls without a second
 placement menu. The couch's full interaction palette starts beside its chosen

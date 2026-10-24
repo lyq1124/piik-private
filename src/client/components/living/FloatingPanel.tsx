@@ -12,16 +12,19 @@ type PanelGesture = "move" | "nw" | "se";
 type PanelChange = { x: number; y: number } | { rect: DOMRect; corner: "nw" | "se"; dx: number; dy: number };
 
 /** Native visibility owns the shell; content owns its session, draft and reading position. */
-export function FloatingPanel({ id, trigger, title, icon, compact = false, anchorOnOpen = false, detachable = false, className = "", children, onOpenChange }: {
+export function FloatingPanel({ id, trigger, title, icon, compact = false, anchorOnOpen = false, detachable = false, docked = false, expanded = false, className = "", children, onOpenChange }: {
   id: string; trigger: string | RefObject<HTMLElement | null>; title: string; icon: GlyphName; compact?: boolean; className?: string;
   anchorOnOpen?: boolean;
   detachable?: boolean;
+  docked?: boolean; expanded?: boolean;
   children: ReactNode; onOpenChange?: (open: boolean, ownerDocument: Document) => void;
 }) {
   const { t, vis } = useCopy();
-  const [open, setOpen] = useState(false);
+  const [floatingOpen, setOpen] = useState(false);
   const panelWindow = usePanelWindow(detachable);
   const { container, slot, surfaceDocument, detached } = panelWindow;
+  const inPageDocked = docked && !detached;
+  const open = docked ? expanded : floatingOpen;
   const panelRef = useRef<HTMLElement>(null);
   const defaultSize = compact ? COMPACT_SIZE : PANEL_SIZE;
   const position = useRef({ x: 1, y: 1 });
@@ -36,10 +39,15 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
   };
 
   useLayoutEffect(() => {
+    if (docked) onOpenChange?.(expanded, surfaceDocument ?? document);
+  }, [docked, expanded, surfaceDocument]);
+
+  useLayoutEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
     const owner = panel.ownerDocument;
     const hideOutsideFullscreen = () => {
+      if (inPageDocked) return false;
       if (!owner.fullscreenElement || owner.fullscreenElement.contains(panel)) return false;
       // A room tool outside the fullscreen subtree must not cover the picture.
       // Adoption already hides its popover, so report the closed state even
@@ -50,10 +58,10 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
       return true;
     };
     // Adoption removes native popovers from the old document's top layer.
-    if (surfaceDocument && !hideOutsideFullscreen()) panel.showPopover();
+    if (surfaceDocument && !inPageDocked && !hideOutsideFullscreen()) panel.showPopover();
     owner.addEventListener("fullscreenchange", hideOutsideFullscreen);
     return () => owner.removeEventListener("fullscreenchange", hideOutsideFullscreen);
-  }, [surfaceDocument]);
+  }, [surfaceDocument, inPageDocked]);
 
   useLayoutEffect(() => {
     if (!surfaceDocument) return;
@@ -68,6 +76,12 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
       // Inner guidance/disclosures consume Escape before the containing window.
       if (event.key !== "Escape" || event.defaultPrevented || event.isComposing ||
         owner.querySelector('[popover="auto"]:popover-open, dialog:modal')) return;
+      if (inPageDocked) {
+        if (panel.contains(owner.activeElement) && !owner.querySelector('.lr-floating-panel:popover-open')) {
+          event.preventDefault(); onOpenChange?.(false, owner); focusTrigger();
+        }
+        return;
+      }
       const panels = [...owner.querySelectorAll<HTMLElement>(".lr-floating-panel:popover-open")];
       if (!panels.length) return;
       const topmost = panels.reduce((top, next) => Number(next.dataset.openedAt) >= Number(top.dataset.openedAt) ? next : top);
@@ -80,7 +94,7 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
     };
     owner.addEventListener("keydown", hideOnEscape);
     return () => owner.removeEventListener("keydown", hideOnEscape);
-  }, [open, surfaceDocument]);
+  }, [open, surfaceDocument, inPageDocked]);
 
   function startGesture(event: PointerEvent<HTMLElement>, kind: PanelGesture) {
     if (!event.isPrimary || event.button !== 0 || !panelRef.current) return;
@@ -93,7 +107,7 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
   }
   useLayoutEffect(() => {
     const panel = panelRef.current;
-    if (!open || !panel || detached) return;
+    if (!open || !panel || detached || docked) return;
     // The visual viewport keeps the composer above a phone's keyboard without
     // resizing the living room or taking ownership of scrolling/focus.
     const viewport = window.visualViewport;
@@ -156,11 +170,12 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
       window.removeEventListener("resize", resize);
       observer.disconnect();
     };
-  }, [open, trigger, compact, anchorOnOpen, detached]);
+  }, [open, trigger, compact, anchorOnOpen, detached, docked]);
 
   const panel = <SurfaceDocument.Provider value={surfaceDocument}>
-    <section id={id} ref={panelRef} popover="manual" role="dialog" tabIndex={-1} className={`lr-floating-surface lr-floating-panel ${className}`}
-      style={defaultSize}
+    <section id={id} ref={panelRef} popover={inPageDocked ? undefined : "manual"} role={inPageDocked ? "region" : "dialog"} tabIndex={-1} className={`lr-floating-surface lr-floating-panel${inPageDocked ? " is-docked" : ""} ${className}`}
+      hidden={inPageDocked && !open}
+      style={docked ? undefined : defaultSize}
       aria-label={title}
       onPointerDownCapture={() => { suppressDragClick.current = false; }}
       onPointerMove={event => {
@@ -182,6 +197,7 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
         // React delivers nested details/popover toggles to this handler too.
         // Only this panel's native visibility owns its positioning lifetime.
         if (event.target !== event.currentTarget) return;
+        if (docked) return;
         const owner = event.currentTarget.ownerDocument;
         // The adopted panel remains open; an old-document close is not a user action.
         const open = event.currentTarget.matches(":popover-open") || owner !== document;
@@ -196,19 +212,22 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
           if (event.currentTarget.contains(document.activeElement)) focusTrigger();
         }
       }}>
-      <header className="lr-floating-header" role="group" tabIndex={detached ? undefined : 0} aria-label={detached ? title : t("floating.move")}
-          aria-describedby={detached ? undefined : `${id}-move-hint`}
-          onPointerDown={detached ? undefined : event => startGesture(event, "move")}
+      <header className="lr-floating-header" role="group" tabIndex={detached || docked ? undefined : 0} aria-label={detached || docked ? title : t("floating.move")}
+          aria-describedby={detached || docked ? undefined : `${id}-move-hint`}
+          onPointerDown={detached || docked ? undefined : event => startGesture(event, "move")}
           onKeyDown={event => {
-            if (detached || event.target !== event.currentTarget || !event.key.startsWith("Arrow") || !panelRef.current) return;
+            if (detached || docked || event.target !== event.currentTarget || !event.key.startsWith("Arrow") || !panelRef.current) return;
             event.preventDefault();
             const rect = panelRef.current.getBoundingClientRect();
             placePanel.current?.({ x: rect.left + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0),
               y: rect.top + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0) });
           }}>
-        <span className="lr-floating-title">{!detached && <Glyph name="grip" size={17} />}
+        {inPageDocked && <button type="button" className="lr-btn is-dense is-quiet" aria-label={t("interaction.close")} onClick={() => {
+          onOpenChange?.(false, document); focusTrigger();
+        }}><Glyph name="arrowRight" size={17} /></button>}
+        <span className="lr-floating-title">{!detached && !docked && <Glyph name="grip" size={17} />}
           {vis ? <Glyph name={icon} size={18} /> : <b>{title}</b>}</span>
-        <span id={`${id}-move-hint`} className="visually-hidden">{t("floating.moveHint")}</span>
+        {!docked && <span id={`${id}-move-hint`} className="visually-hidden">{t("floating.moveHint")}</span>}
         {detachable && !detached && panelWindowAPI(typeof window === "undefined" ? null : window) &&
           <Tooltip kind="hint-window-detach" place="below" text={vis ? undefined : t("floating.detach")}>
             <button type="button" className="lr-btn is-dense is-quiet lr-popover-close" disabled={panelWindow.opening}
@@ -216,13 +235,13 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
               <Glyph name="pip" size={18} />
             </button>
           </Tooltip>}
-        {!detached && <button type="button" className="lr-btn is-dense is-quiet lr-popover-close" aria-label={t("common.close")} onClick={() => {
+        {!detached && !docked && <button type="button" className="lr-btn is-dense is-quiet lr-popover-close" aria-label={t("common.close")} onClick={() => {
           panelRef.current?.hidePopover(); focusTrigger();
         }}><Glyph name="x" size={16} /></button>}
       </header>
       {panelWindow.failed && <p className="lr-floating-error" role="status">{t("floating.detachFailed")}</p>}
       {children}
-      {!detached && (["nw", "se"] as const).map(corner => <span key={corner} className={`lr-floating-resize is-${corner}`}
+      {!detached && !docked && (["nw", "se"] as const).map(corner => <span key={corner} className={`lr-floating-resize is-${corner}`}
         role="group" tabIndex={0} aria-label={t("floating.resize")} aria-describedby={`${id}-resize-hint`}
         onPointerDown={event => startGesture(event, corner)} onKeyDown={event => {
           if (!event.key.startsWith("Arrow") || !panelRef.current) return;
@@ -231,7 +250,7 @@ export function FloatingPanel({ id, trigger, title, icon, compact = false, ancho
             dx: event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0,
             dy: event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0 });
         }}><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 12 12 3M8 12l4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg></span>)}
-      <span id={`${id}-resize-hint`} className="visually-hidden">{t("floating.resizeHint")}</span>
+      {!docked && <span id={`${id}-resize-hint`} className="visually-hidden">{t("floating.resizeHint")}</span>}
     </section></SurfaceDocument.Provider>;
   // The stable portal target moves between documents without remounting content.
   return container ? <span ref={slot} style={{ display: "contents" }}>{createPortal(panel, container)}</span> : panel;

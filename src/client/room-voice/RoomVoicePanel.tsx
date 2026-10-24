@@ -14,6 +14,7 @@ import { Glyph } from "../ui/icons";
 import type { RoomVoiceSession } from "./session";
 import { MicrophoneLevel } from "./MicrophoneLevel";
 import { describeVoiceParticipant } from "./participant-presentation";
+import { RoomVoiceOnboarding } from "./RoomVoiceOnboarding";
 import "./room-voice.css";
 
 export type RoomVoiceView = Pick<RoomVoiceSession, "subscribe" | "getSnapshot" | "resumeAudio" | "command" |
@@ -44,12 +45,14 @@ export function RoomVoiceControls({ session }: Props) {
   const microphoneUnavailable = !state.microphone && !state.capturePending && !navigator.mediaDevices?.getUserMedia;
   const joined = Boolean(me?.joined);
   const host = state.role === "host";
-  const voiceClosed = !host && state.room?.enabled === false;
-  const actionTitle = host ? joined ? "voice.close" : "voice.open" : joined ? "voice.leave" : "voice.join";
-  const actionHint = host ? joined ? "hint-voice-close" : "hint-voice-open"
+  const independent = Boolean(state.channelControl);
+  const voiceClosed = (!host || independent) && state.room?.enabled === false;
+  const actionTitle = host && !independent ? joined ? "voice.close" : "voice.open" : joined ? "voice.leave" : "voice.join";
+  const actionHint = host && !independent ? joined ? "hint-voice-close" : "hint-voice-open"
     : joined ? "hint-voice-leave" : voiceClosed ? "hint-voice-closed" : "hint-voice-join";
-  const actionExplanation = host ? joined ? "voice.closeHint" : "voice.openHint" : voiceClosed ? "voice.closedHint" : undefined;
+  const actionExplanation = host && !independent ? joined ? "voice.closeHint" : "voice.openHint" : voiceClosed ? "voice.closedHint" : undefined;
   return <>
+    <RoomVoiceOnboarding session={session} />
     <div className="lr-voice-toolbar lr-media-controls" role="group" aria-label={t("interaction.voice")}>
       {joined && <div className="lr-voice-quick-controls">
         <AudioVolumeMenu volume={state.input.volume} onVolume={volume => session.setVolume(volume)}
@@ -72,12 +75,17 @@ export function RoomVoiceControls({ session }: Props) {
           pressed={!state.deafened} onClick={() => session.deafen(!state.deafened)} />
         </AudioVolumeMenu>
       </div>}
-      <Btn icon={!joined ? "headphones" : host ? "stop" : "door"}
-        title={actionTitle} cap={actionTitle} tone={joined && host ? "danger" : undefined} size="compact"
+      <Btn icon={!joined ? "headphones" : host && !independent ? "stop" : "door"}
+        title={actionTitle} cap={actionTitle} tone={joined && host && !independent ? "danger" : undefined} size="compact"
         hint={actionHint} hintText={actionExplanation}
-        disabled={!state.connected || !state.room || !joined && !host && !state.room.enabled}
-        onClick={() => { if (!joined) session.resumeAudio(); session.command({ action: joined ? "leave" : "join" }); }} />
+        disabled={!state.connected || !state.room || !joined && voiceClosed}
+        onClick={() => { if (!joined) session.resumeAudio(); session.command({ action: joined ? host && independent ? "leave-self" : "leave" : "join" }); }} />
+      {host && independent && <Btn icon={state.room?.enabled ? "stop" : "headphones"}
+        title={state.room?.enabled ? "voice.close" : "voice.open"} cap={state.room?.enabled ? "voice.close" : "voice.open"}
+        size="compact" tone={state.room?.enabled ? "danger" : undefined} disabled={!state.connected || !state.room}
+        onClick={() => session.command({ action: state.room?.enabled ? "close" : "open" })} />}
     </div>
+    {host && independent && state.room?.enabled && !joined && <p className="lr-voice-relay-only">{t("voice.relayOnly")}</p>}
     {state.autoplayBlocked && <Btn icon="play" title="voice.play" cap="voice.play" size="compact" hint="hint-local-play" onClick={() => session.resumeAudio()} />}
     {state.error && <p className="lr-voice-control-error" role="alert"><Glyph name="alert" size={16} />
       <span className={vis ? "visually-hidden" : undefined}>{t(`voice.error.${state.error}`)}</span></p>}
